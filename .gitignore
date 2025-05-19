@@ -1,0 +1,4 @@
+public/output
+backend-node/node_modules
+backend-node/uploads
+frontend/uploads
