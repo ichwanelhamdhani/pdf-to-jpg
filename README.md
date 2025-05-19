@@ -89,4 +89,4 @@ public/
 
 ## 📜 Lisensi
 
-MIT License © [Nama Kamu]
+MIT License © Ichwan El Hamdhani
