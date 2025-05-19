@@ -29,3 +29,64 @@ Aplikasi web untuk mengonversi file PDF menjadi gambar JPEG secara cepat dan efi
 ```bash
 git clone https://github.com/username/pdf-to-jpeg-converter.git
 cd pdf-to-jpeg-converter
+```
+
+### 2. Install Dependency
+
+```bash
+npm install
+```
+
+### 3. Install Poppler (dibutuhkan oleh `pdf-poppler`)
+
+#### Linux (Debian/Ubuntu)
+
+```bash
+sudo apt install poppler-utils
+```
+
+#### macOS (menggunakan brew)
+
+```bash
+brew install poppler
+```
+
+#### Windows
+
+Download dari: [http://blog.alivate.com.au/poppler-windows/](http://blog.alivate.com.au/poppler-windows/)
+
+Tambahkan path ke `poppler/bin` dalam `Environment Variables`.
+
+### 4. Jalankan Server
+
+```bash
+npx nodemon index.js
+```
+
+Server akan berjalan di: [http://localhost:3000](http://localhost:3000)
+
+## 📂 Struktur Direktori
+
+```
+backend-node/
+├── uploads/               # Tempat file PDF di-upload
+├── public/output/         # Hasil konversi JPG
+├── index.js               # Server utama
+└── services/
+    └── converter.js       # Fungsi konversi PDF -> JPEG
+
+public/
+├── index.html             # Frontend utama
+└── assets/                # CSS & JS tambahan
+```
+
+## 📌 Catatan
+
+- Ukuran maksimal file: 20MB per PDF (dapat disesuaikan)
+- File hasil akan otomatis dihapus setiap 5 menit
+- Tidak ada database, hanya file system
+- Konversi dilakukan per halaman PDF menjadi JPEG
+
+## 📜 Lisensi
+
+MIT License © [Nama Kamu]
