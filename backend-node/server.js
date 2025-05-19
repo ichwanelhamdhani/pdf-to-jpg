@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { convert } = require('pdf-poppler');
 const cors = require('cors');
+const archiver = require('archiver');
 
 const app = express();
 const port = 3000;
@@ -109,6 +110,29 @@ app.get('/download', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
 
   fs.createReadStream(filePath).pipe(res);
+});
+
+
+app.post('/download-zip', express.json(), (req, res) => {
+  const files = req.body.files; // array of filenames (tanpa path)
+  if (!files || !Array.isArray(files) || files.length === 0) {
+    return res.status(400).send('No files selected');
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="selected_files.zip"');
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.pipe(res);
+
+  files.forEach(fileName => {
+    const filePath = path.join(outputDir, fileName);
+    if (fs.existsSync(filePath)) {
+      archive.file(filePath, { name: fileName });
+    }
+  });
+
+  archive.finalize();
 });
 
 

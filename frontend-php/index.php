@@ -46,8 +46,10 @@
                 <div id="progress-bar" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;">0%</div>
             </div>
 
-            <button type="submit" class="btn btn-primary">Upload & Konversi</button>
+            <button id="submitFiles" type="submit" class="btn btn-primary">Upload & Konversi</button>
             <button type="button" class="btn btn-danger" id="resetBtn">Reset</button>
+            <button id="downloadSelected" class="btn btn-success">Download Terpilih (ZIP)</button>
+
         </form>
 
         <hr class="my-4" />
@@ -121,6 +123,10 @@
 
         // Submit
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            // Hanya proses jika tombol submitFiles yang diklik
+            if (e.submitter && e.submitter.id !== 'submitFiles') {
+                return;
+            }
             e.preventDefault();
 
             const formData = new FormData();
@@ -165,8 +171,9 @@
                                 col.className = 'col-md-3 mb-3';
                                 col.innerHTML = `
                   <div class="image-wrapper border rounded shadow-sm d-flex flex-column align-items-center">
+                    <input type="checkbox" class="download-checkbox" data-url="${fileName}" style="margin-top: 8px; margin-bottom: 8px; float: left;" />
                     <img src="${imageUrl}" class="img-fluid mb-2" />
-                    <a href="${downloadUrl}" class="btn btn-sm btn-primary" download>Download</a>
+                    <a href="${downloadUrl}" class="btn btn-sm btn-primary mb-2" download>Download</a>
                   </div>`;
                                 result.appendChild(col);
                             });
@@ -192,6 +199,18 @@
                         timerProgressBar: true,
                         showConfirmButton: false
                     });
+                    const imageUrls = [];
+
+                    data.results.forEach(fileResult => {
+                        if (fileResult.images) {
+                            fileResult.images.forEach(img => {
+                                imageUrls.push(`http://localhost:3000${img}`);
+                            });
+                        }
+                    });
+
+                    monitorFiles(imageUrls);
+
                 } catch (err) {
                     Swal.fire('Gagal', 'Gagal membaca respon dari server.', 'error');
                 }
@@ -234,6 +253,75 @@
                 timerProgressBar: true,
                 showConfirmButton: false
             });
+        });
+
+        function monitorFiles(fileUrls, interval = 30000) { // default: cek tiap 30 detik
+            const check = () => {
+                Promise.all(fileUrls.map(url => fetch(url, {
+                        method: 'HEAD'
+                    })))
+                    .then(responses => {
+                        const allMissing = responses.every(r => !r.ok);
+                        if (allMissing) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'File dihapus',
+                                text: 'File hasil konversi sudah dihapus. Halaman akan dimuat ulang.',
+                                timer: 3000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Gagal cek file:', err);
+                    });
+            };
+
+            setInterval(check, interval);
+        }
+
+        document.getElementById('downloadSelected').addEventListener('click', async function() {
+            const checked = Array.from(document.querySelectorAll('.download-checkbox:checked'));
+
+            if (checked.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak ada file dipilih',
+                    text: 'Silakan centang file yang ingin didownload.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            const fileNames = checked.map(cb => cb.getAttribute('data-filename'));
+
+            try {
+                const res = await fetch('http://localhost:3000/download-zip', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: fileNames
+                    })
+                });
+
+                if (!res.ok) throw new Error('Gagal membuat ZIP');
+
+                const blob = await res.blob();
+                const zipUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = 'selected_files.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(zipUrl);
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            }
         });
     </script>
 </body>
